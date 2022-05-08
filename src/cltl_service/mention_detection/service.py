@@ -24,7 +24,7 @@ class MentionDetectionService:
                     config_manager: ConfigurationManager):
         config = config_manager.get_config("cltl.mention_detection.events")
 
-        def image_loader(url) -> TextSource:
+        def text_loader(url) -> TextSource:
             return ClientTextSource.from_config(config_manager, url)
 
 
