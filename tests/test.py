@@ -51,6 +51,8 @@ if __name__ == "__main__":
     scenarioStorage = create_scenario(scenario_path, scenario_id)
     scenario_ctrl = scenarioStorage.create_scenario(scenario_id, int(time.time() * 1e3), None, "Leolani")
     textSignal = create_text_signal(scenario_ctrl, text, None )
+    mentions.add_np_annotation_with_spacy (textSignal, nlp,  "Piek", "Leolani")
+    mentions.add_ner_annotation_with_spacy(textSignal, nlp)
     scenario_ctrl.append_signal(textSignal)
 
     scenario_ctrl.scenario.ruler.end = int(time.time() * 1e3)
