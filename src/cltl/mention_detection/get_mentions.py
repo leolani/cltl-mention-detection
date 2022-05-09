@@ -26,10 +26,6 @@ def annotate_tokens(signal: TextSignal, token_text_list, segments, annotationTyp
 
         signal.mentions.extend([Mention(str(uuid.uuid4()), [segment], [annotation])
                                 for segment, annotation in zip(segments, annotations)])
- 
-    
-
-
 
 
 def add_ner_annotation_with_spacy(signal: TextSignal, nlp):
@@ -44,26 +40,20 @@ def add_ner_annotation_with_spacy(signal: TextSignal, nlp):
     annotate_tokens(signal, tokens, segments,AnnotationType.TOKEN.name, processor_name)
 
 
-    ents = [NER.for_string(ent.label_) for ent in doc.ents]    
-    entity_list = [ent.text for ent in doc.ents]
+    entity_labels = [NER.for_string(ent.label_) for ent in doc.ents]
+    entity_token_list = [ent.text for ent in doc.ents]
     
-    segments = [token.ruler for token in tokens if token.value in entity_list]
-    annotate_tokens(signal, entity_list, segments, AnnotationType.NER.name, processor_name)
-    
-    
+    segments = [token.ruler for token in tokens if token.value in entity_token_list]
+    annotate_tokens(signal, entity_token_list, segments, AnnotationType.NER.name, processor_name)
 
-#    current_time = int(time.time() * 1e3)
-#    annotations = [Annotation(AnnotationType.TOKEN.name.lower(), token, processor_name, current_time)
-#                   for token in tokens]
-#    ner_annotations = [Annotation(AnnotationType.NER.name.lower(), ent, processor_name, current_time)
-#                       for ent in ents]
-#
-#    signal.mentions.extend([Mention(str(uuid.uuid4()), [offset], [annotation])
-#                            for offset, annotation in zip(offsets, annotations)])
-#    signal.mentions.extend([Mention(str(uuid.uuid4()), [segment], [annotation])
-#                            for segment, annotation in zip(segments, ner_annotations)])
+    if entity_token_list:
+        segments, tokens = zip(*[(Index(signal.id, token.idx, token.idx + len(token)), Token.for_string(token.text))
+                                 for token in entity_token_list])
+        annotate_tokens(signal, tokens, segments, AnnotationType.TOKEN.name, processor_name)
+
+
     # print(entity_list)
-    return entity_list
+    return entity_token_list, entity_labels
 
 
 
@@ -84,12 +74,9 @@ def add_np_annotation_with_spacy(signal: TextSignal, nlp,  SPEAKER: str, HEARER:
     utterance = ''.join(signal.seq)
 
     doc = nlp(utterance)
-    offsets, tokens = zip(*[(Index(signal.id, token.idx, token.idx + len(token)), Token.for_string(token.text))
-                            for token in doc])
-
     
     predicates = {}
-    subjects_and_objects = []
+    subjects_and_objects_labels = []
     subject_and_object_tokens = []
     
     speaker_mentions =[]
@@ -114,30 +101,29 @@ def add_np_annotation_with_spacy(signal: TextSignal, nlp,  SPEAKER: str, HEARER:
                     hearer_mentions.append(HEARER)
                     hearer_tokens.append(token)
             elif token.pos_=="NOUN" or token.pos_=="VERB" or token.pos_=="PROPN":
-                subjects_and_objects.append(token.lemma_)
+                @TODO #this should be filtered for labels from object recognition
+                subjects_and_objects_labels.append(token.lemma_)
                 subject_and_object_tokens.append(token)
-
             
             predicates[head_id][token.dep_] = token.lemma_
-   #### Change this to create triples 
 
     #TODO make sure the correct annotations are made as well 
     if subject_and_object_tokens:
         segments, tokens = zip(*[(Index(signal.id, token.idx, token.idx + len(token)), Token.for_string(token.text))
                                 for token in subject_and_object_tokens])
-        annotate_tokens(signal, subjects_and_objects, segments,AnnotationType.TOKEN.name, processor_name)
+        annotate_tokens(signal, tokens, segments,AnnotationType.TOKEN.name, processor_name)
 
     if speaker_tokens:
         segments, tokens = zip(*[(Index(signal.id, token.idx, token.idx + len(token)), Token.for_string(token.text))
                             for token in speaker_tokens])
-        annotate_tokens(signal, speaker_mentions, segments,AnnotationType.LINK.name, processor_name)
+        annotate_tokens(signal, tokens, segments,AnnotationType.LINK.name, processor_name)
 
     if hearer_tokens:
         segments, tokens = zip(*[(Index(signal.id, token.idx, token.idx + len(token)), Token.for_string(token.text))
                             for token in hearer_tokens])
-        annotate_tokens(signal, hearer_mentions, segments,AnnotationType.LINK.name, processor_name)
+        annotate_tokens(signal, tokens, segments,AnnotationType.LINK.name, processor_name)
 
-    return subjects_and_objects
+    return subjects_and_objects_labels
 
 
 def recognize_emotion(utterance: str, url_erc: str = "http://127.0.0.1:10006"):
