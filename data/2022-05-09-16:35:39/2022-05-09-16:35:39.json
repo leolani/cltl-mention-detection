@@ -1,0 +1,34 @@
+{
+  "signals": {
+    "audio": "./audio.json",
+    "image": "./image.json",
+    "text": "./text.json"
+  },
+  "ruler": {
+    "start": 1652106939016,
+    "container_id": "2022-05-09-16:35:39",
+    "end": 1652106939032,
+    "@context": {
+      "TemporalRuler": "https://emissor.org#TemporalRuler",
+      "id": "@id",
+      "start": "https://emissor.org#start",
+      "end": "https://emissor.org#end",
+      "container_id": {
+        "@id": "https://emissor.org#container_id",
+        "@type": "@id"
+      }
+    },
+    "@type": "TemporalRuler",
+    "_py_type": "emissor.representation.container-TemporalRuler"
+  },
+  "@context": {
+    "Scenario": "https://emissor.org#Scenario",
+    "id": "@id",
+    "context": "https://emissor.org#context",
+    "signals": "https://emissor.org#signals",
+    "ruler": "https://emissor.org#ruler"
+  },
+  "id": "2022-05-09-16:35:39",
+  "context": "Leolani",
+  "@type": "Scenario"
+}
