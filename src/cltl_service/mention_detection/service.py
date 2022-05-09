@@ -1,8 +1,8 @@
 import logging
 from typing import Callable
 
-from cltl.backend.source.client_source import ClientImageSource
-from cltl.backend.spi.image import ImageSource
+from cltl.backend.source.client_source import ClientTextSource
+from cltl.backend.spi.text import TextSource
 from cltl.combot.infra.config import ConfigurationManager
 from cltl.combot.infra.event import Event, EventBus
 from cltl.combot.infra.resource import ResourceManager
@@ -23,7 +23,7 @@ class MentionDetectionService:
     def from_config(cls, mention_detector: MentionDetector, event_bus: EventBus, resource_manager: ResourceManager,
                     config_manager: ConfigurationManager):
         config = config_manager.get_config("cltl.mention_detection.events")
-
+        #TODO This is probably not needed for processing a text signal that is posted by the ASR component
         def text_loader(url) -> TextSource:
             return ClientTextSource.from_config(config_manager, url)
 
@@ -32,7 +32,7 @@ class MentionDetectionService:
                    event_bus, resource_manager)
 
     def __init__(self, input_topic: str, output_topic: str, mention_detector: MentionDetector,
-                 image_loader: Callable[[str], ImageSource],
+                 text_loader: Callable[[str], TextSource],
                  event_bus: EventBus, resource_manager: ResourceManager):
         self._mention_detector = mention_detector
         self._text_loader = text_loader

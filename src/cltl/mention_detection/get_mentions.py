@@ -101,7 +101,7 @@ def add_np_annotation_with_spacy(signal: TextSignal, nlp,  SPEAKER: str, HEARER:
                     hearer_mentions.append(HEARER)
                     hearer_tokens.append(token)
             elif token.pos_=="NOUN" or token.pos_=="VERB" or token.pos_=="PROPN":
-                @TODO #this should be filtered for labels from object recognition
+                #TODO this should be filtered for labels from object recognition
                 subjects_and_objects_labels.append(token.lemma_)
                 subject_and_object_tokens.append(token)
             
