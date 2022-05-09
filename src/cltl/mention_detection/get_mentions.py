@@ -41,6 +41,7 @@ def add_ner_annotation_with_spacy(signal: TextSignal, nlp):
 
 
     entity_labels = [NER.for_string(ent.label_) for ent in doc.ents]
+
     entity_token_list = [ent.text for ent in doc.ents]
     
     segments = [token.ruler for token in tokens if token.value in entity_token_list]
