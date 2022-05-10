@@ -9,12 +9,12 @@ with open("VERSION", "r") as fh:
 
 
 setup(
-    name='cltl.template',
+    name='cltl.mention-detection',
     version=version,
     package_dir={'': 'src'},
     packages=find_namespace_packages(include=['cltl.*', 'cltl_service.*'], where='src'),
     data_files=[('VERSION', ['VERSION'])],
-    url="https://github.com/leolani/cltl-template",
+    url="https://github.com/leolani/cltl-mention-detection",
     license='MIT License',
     author='CLTL',
     author_email='t.baier@vu.nl',

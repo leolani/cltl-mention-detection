@@ -6,12 +6,12 @@ from cltl.combot.infra.event import Event, EventBus
 from cltl.combot.infra.resource import ResourceManager
 from cltl.combot.infra.time_util import timestamp_now
 from cltl.combot.infra.topic_worker import TopicWorker
-from cltl_service.backend.schema import TextSignalEvent
+from cltl.combot.event.emissor import TextSignalEvent
 from emissor.representation.scenario import TextSignal
 from flask import Flask, Response
 from flask.json import JSONEncoder
 
-from cltl.template.api import DemoProcessor
+from cltl.mention_detection.api import DemoProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class TemplateService:
     @classmethod
     def from_config(cls, processor: DemoProcessor, event_bus: EventBus, resource_manager: ResourceManager,
                     config_manager: ConfigurationManager):
-        config = config_manager.get_config("cltl.template")
+        config = config_manager.get_config("cltl.mention-detection")
 
         return cls(config.get("topic_in"), config.get("topic_out"), processor, event_bus, resource_manager)
 
@@ -73,7 +73,7 @@ class TemplateService:
         self._app = Flask("audio_storage")
         self._app.json_encoder = NumpyJSONEncoder
 
-        @self._app.route(f"/template/<paramter>", methods=['GET'])
+        @self._app.route(f"/mention-detection/<paramter>", methods=['GET'])
         def store_audio(parameter: str):
             return Response(status=200)
 

@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from cltl.template.api import DemoProcessor
+from cltl.mention_detection.api import DemoProcessor
 
 logger = logging.getLogger(__name__)
 
