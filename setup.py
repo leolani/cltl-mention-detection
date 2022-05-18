@@ -25,9 +25,13 @@ setup(
     install_requires=['cltl.combot'],
     extras_require={
         "impl": [
-            "numpy"
+            "numpy",
+            "spacy"
         ],
         "service": [
+            "cltl.face-recognition",
+            "cltl.object-recognition",
+            "cltl.brain",
             "emissor",
             "flask"
         ]}
