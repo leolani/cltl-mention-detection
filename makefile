@@ -14,11 +14,10 @@ include util/make/makefile.py.base.mk
 include util/make/makefile.git.mk
 
 .PHONY: build
-build: spacy
+build: spacy.lock
 
 
-.PHONY: spacy
-spacy:
+spacy.lock:
 	source venv/bin/activate; python -m spacy download en
 	touch spacy.lock
 
