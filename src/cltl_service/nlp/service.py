@@ -70,4 +70,4 @@ class NLPService:
                     in chain(zip(token_annotations, token_segments), zip(entity_annotations, entity_segments))]
 
         if mentions:
-            self._event_bus.publish(self._output_topic, Event.for_payload(AnnotationEvent(mentions)))
+            self._event_bus.publish(self._output_topic, Event.for_payload(AnnotationEvent.create(mentions)))
