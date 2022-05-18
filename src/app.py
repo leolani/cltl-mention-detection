@@ -16,10 +16,8 @@ from cltl.combot.infra.config.k8config import K8LocalConfigurationContainer
 from cltl.combot.infra.di_container import singleton
 from cltl.combot.infra.event.kombu import KombuEventBus
 from cltl.combot.infra.event.memory import SynchronousEventBus
-from cltl.combot.infra.di_container import
 from cltl.combot.infra.resource.threaded import ThreadedResourceContainer
 from cltl_service.nlp.service import NLPService
-from kombu.serialization import register
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +92,7 @@ class ApplicationContainer(NLPContainer, MentionExtractionContainer):
         if config.get_boolean("local"):
             return SynchronousEventBus()
         else:
+            from kombu.serialization import register
             register('cltl-json',
                      lambda x: json.dumps(x, default=vars),
                      lambda x: json.loads(x, object_hook=lambda d: SimpleNamespace(**d)),
