@@ -19,6 +19,7 @@ class POS(Enum):
     PROPN = auto()  # proper noun
     PUNCT = auto()  # punctuation
     SCONJ = auto()  # subordinating conjunction
+    SPACE = auto()  # space
     SYM = auto()    # symbol
     VERB = auto()   # verb
     X = auto()      # other
