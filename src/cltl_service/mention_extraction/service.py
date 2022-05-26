@@ -2,7 +2,7 @@ import logging
 from dataclasses import asdict
 from typing import List
 
-from cltl.combot.event.emissor import AnnotationEvent, ScenarioEvent
+from cltl.combot.event.emissor import AnnotationEvent, ScenarioEvent, ScenarioStarted
 from cltl.combot.infra.config import ConfigurationManager
 from cltl.combot.infra.event import Event, EventBus
 from cltl.combot.infra.resource import ResourceManager
@@ -62,7 +62,7 @@ class MentionExtractionService:
         self._topic_worker = None
 
     def _process(self, event: Event):
-        if event.payload.type == ScenarioEvent.__name__:
+        if event.payload.type == ScenarioStarted.__name__:
             self._scenario_id = event.payload.scenario.id
             return
 
@@ -81,5 +81,5 @@ class MentionExtractionService:
 
         mentions = mention_factory(event.payload.mentions, self._scenario_id)
 
-        for mention in mentions:
-            self._event_bus.publish(self._output_topic, asdict(mention))
+        if mentions:
+            self._event_bus.publish(self._output_topic, Event.for_payload([asdict(mention) for mention in mentions]))

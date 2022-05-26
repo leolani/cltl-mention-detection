@@ -10,7 +10,7 @@ from cltl.combot.infra.time_util import timestamp_now
 from cltl.combot.infra.topic_worker import TopicWorker
 from emissor.representation.scenario import Annotation, Mention
 
-from cltl.nlp.api import NLP, Token, NamedEntity
+from cltl.nlp.api import NLP, Token, NamedEntity, Entity
 
 logger = logging.getLogger(__name__)
 
@@ -57,17 +57,21 @@ class NLPService:
         doc = self._nlp.analyze(text_signal.text)
 
         # TODO recap emissor Annotation classes -> NER, Token, etc.
-        token_annotations = [Annotation(Token.__name__, token, NLP.__name__, timestamp_now())
-                             for token in doc.tokens]
-        token_segments = [text_signal.ruler.get_offset(*token.segment) for token in doc.tokens]
-
-        entity_annotations = [Annotation(NamedEntity.__name__, entity, NLP.__name__, timestamp_now())
-                             for entity in doc.entities]
-        entity_segments = [text_signal.ruler.get_offset(*entity.segment) for entity in doc.entities]
+        token_segments, token_annotations = self._convert_to_segment_annotation(text_signal, Token.__name__, doc.tokens)
+        ner_segments, ner_annotations = self._convert_to_segment_annotation(text_signal, NamedEntity.__name__, doc.named_entities)
+        entity_segments, entity_annotations = self._convert_to_segment_annotation(text_signal, Entity.__name__, doc.entities)
 
         mentions = [Mention(str(uuid.uuid4()), [segment], [annotation])
-                    for annotation, segment
-                    in chain(zip(token_annotations, token_segments), zip(entity_annotations, entity_segments))]
+                    for segment, annotation
+                    in chain(zip(token_segments, token_annotations),
+                             zip(ner_segments, ner_annotations),
+                             zip(entity_segments, entity_annotations))]
 
         if mentions:
             self._event_bus.publish(self._output_topic, Event.for_payload(AnnotationEvent.create(mentions)))
+
+    def _convert_to_segment_annotation(self, text_signal, type, collection):
+        annotations = [Annotation(type, element, NLP.__name__, timestamp_now()) for element in collection]
+        segments = [text_signal.ruler.get_offset(*element.segment) for element in collection]
+
+        return segments, annotations

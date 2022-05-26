@@ -1,40 +1,19 @@
 import abc
 import logging
 from dataclasses import dataclass
-from enum import Enum
 from typing import List, Tuple
 
+from cltl.combot.infra.time_util import timestamp_now
 from cltl.commons.discrete import UtteranceType
 from emissor.representation.scenario import Mention
 
 from cltl.mention_extraction.api import MentionExtractor
+import cltl.nlp.api as nlp
 
 logger = logging.getLogger(__name__)
 
 
-class ObjectType(Enum):
-    CAT = "cat"
-    DOG = "dog"
-    PHONE = "phone"
-    TV = "tv"
-    PERSON = "person"
-    LAPTOP = "laptop"
-    BOTTLE = "bottle"
-    CUP = "cup"
-    BOOK = "book"
-
-
-_ACCEPTED_OBJECTS = {object_type.name
-                     for object_type in [ObjectType.CAT,
-                                         ObjectType.DOG,
-                                         ObjectType.PHONE,
-                                         ObjectType.TV,
-                                         ObjectType.PERSON,
-                                         ObjectType.LAPTOP,
-                                         ObjectType.BOTTLE,
-                                         ObjectType.CUP,
-                                         ObjectType.BOOK,
-                                         ObjectType.TV]}
+_ACCEPTED_OBJECTS = {object_type.name for object_type in nlp.ObjectType}
 
 
 @dataclass
@@ -66,6 +45,8 @@ class ImageMention:
     item: Entity
     confidence: float
     context_id: str
+    timestamp: int
+    utterance_type: UtteranceType = UtteranceType.IMAGE_MENTION
 
 
 @dataclass
@@ -78,7 +59,8 @@ class TextMention:
     item: Entity
     confidence: float
     context_id: str
-    utterance_type: UtteranceType = UtteranceType.IMAGE_MENTION
+    timestamp: int
+    utterance_type: UtteranceType = UtteranceType.TEXT_MENTION
 
 
 _IMAGE_SOURCE = Source("front-camera", ["sensor"], "http://cltl.nl/leolani/inputs/front-camera")
@@ -91,7 +73,14 @@ class MentionDetector(abc.ABC):
 
 class TextMentionDetector(MentionDetector):
     def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
-        return mentions
+        filtered = []
+        for mention in mentions:
+            annotations = [annotation for annotation in mention.annotations
+                           if (annotation.type == nlp.NamedEntity.__name__ or annotation.type == nlp.Entity.__name__)]
+            if annotations:
+                filtered.append(Mention(mention.id, mention.segment, annotations))
+
+        return filtered
 
 
 class NewFaceMentionDetector(MentionDetector):
@@ -119,7 +108,7 @@ class ObjectMentionDetector(MentionDetector):
 
 
 class DefaultMentionExtractor(MentionExtractor):
-    def __int__(self, text_detector: MentionDetector, face_detector: MentionDetector, object_detector: MentionDetector):
+    def __init__(self, text_detector: MentionDetector, face_detector: MentionDetector, object_detector: MentionDetector):
         self._text_detector = text_detector
         self._face_detector = face_detector
         self._object_detector = object_detector
@@ -141,38 +130,39 @@ class DefaultMentionExtractor(MentionExtractor):
         image_path = mention.id
 
         mention_id = mention.id
-        bounds = mention.segments[0].to_tuple()
+        bounds = mention.segment[0].to_tuple()
         face_id = mention.annotations[0].value
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
                             Entity.create_person(None, face_id, None),
-                            confidence, scenario_id)
+                            confidence, scenario_id, timestamp_now())
 
     def create_object_mention(self, mention: Mention, scenario_id: str):
         image_id = mention.id
         image_path = mention.id
 
         mention_id = mention.id
-        bounds = mention.segments[0].to_tuple()
+        bounds = mention.segment[0].to_tuple()
+        # TODO multiple?
         object_label = mention.annotations[0].value
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
-                            Entity(None, object_label, None, None),
-                            confidence, scenario_id)
+                            Entity(None, [object_label], None, None),
+                            confidence, scenario_id, timestamp_now())
 
     def create_text_mention(self, mention: Mention, scenario_id: str):
-        author = Entity.create_person(None, None, None)
+        author = Entity.create_person("SPEAKER", None, None)
 
         utterance = ""
 
-        segment = mention.segments[0]
+        segment = mention.segment[0]
         signal_id = segment.container_id
         entity_text = mention.annotations[0].value.text
         entity_type = mention.annotations[0].value.label
         confidence = 1.0
 
-        return TextMention(scenario_id, signal_id, author, utterance, f"{segment.start}-{segment.end}",
-                           Entity(entity_text, entity_type, None, None),
-                           confidence, scenario_id)
+        return TextMention(scenario_id, signal_id, author, utterance, f"{segment.start} - {segment.stop}",
+                           Entity(entity_text, [entity_type], None, None),
+                           confidence, scenario_id, timestamp_now())
