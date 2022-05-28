@@ -94,9 +94,9 @@ class NewFaceMentionDetector(MentionDetector):
             self._faces = set()
 
         new_face_mentions = [mention for mention in mentions
-                             if mention.annotations and mention.annotations[0].value.id not in self._faces]
+                             if mention.annotations and mention.annotations[0].value not in self._faces]
 
-        self._faces = self._faces | {mention.annotations[0].value.id for mention in new_face_mentions}
+        self._faces = self._faces | {mention.annotations[0].value for mention in new_face_mentions}
 
         return new_face_mentions
 
@@ -119,18 +119,18 @@ class DefaultMentionExtractor(MentionExtractor):
 
     def extract_object_mentions(self, mentions: List[Mention], scenario_id: str) -> List[ImageMention]:
         return [self.create_object_mention(mention, scenario_id)
-                for mention in self._face_detector.filter_mentions(mentions, scenario_id)]
+                for mention in self._object_detector.filter_mentions(mentions, scenario_id)]
 
     def extract_face_mentions(self, mentions: List[Mention], scenario_id: str) -> List[ImageMention]:
         return [self.create_face_mention(mention, scenario_id)
-                for mention in self._object_detector.filter_mentions(mentions, scenario_id)]
+                for mention in self._face_detector.filter_mentions(mentions, scenario_id)]
 
     def create_face_mention(self, mention: Mention, scenario_id: str):
         image_id = mention.id
         image_path = mention.id
 
         mention_id = mention.id
-        bounds = mention.segment[0].to_tuple()
+        bounds = mention.segment[0].bounds
         face_id = mention.annotations[0].value
         confidence = 1.0
 
@@ -145,7 +145,7 @@ class DefaultMentionExtractor(MentionExtractor):
         mention_id = mention.id
         bounds = mention.segment[0].to_tuple()
         # TODO multiple?
-        object_label = mention.annotations[0].value
+        object_label = mention.annotations[0].value.type
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
