@@ -94,7 +94,9 @@ class NewFaceMentionDetector(MentionDetector):
             self._faces = set()
 
         new_face_mentions = [mention for mention in mentions
-                             if mention.annotations and mention.annotations[0].value not in self._faces]
+                             if (mention.annotations
+                                 and mention.annotations[0].value is not None
+                                 and mention.annotations[0].value not in self._faces)]
 
         self._faces = self._faces | {mention.annotations[0].value for mention in new_face_mentions}
 
@@ -104,7 +106,9 @@ class NewFaceMentionDetector(MentionDetector):
 class ObjectMentionDetector(MentionDetector):
     def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
         return [mention for mention in mentions
-                if mention.annotations and mention.annotations[0].value.type in _ACCEPTED_OBJECTS]
+                if (mention.annotations
+                    and mention.annotations[0].value is not None
+                    and mention.annotations[0].value.type in _ACCEPTED_OBJECTS)]
 
 
 class DefaultMentionExtractor(MentionExtractor):
