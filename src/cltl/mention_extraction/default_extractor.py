@@ -139,7 +139,7 @@ class DefaultMentionExtractor(MentionExtractor):
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
-                            Entity.create_person(None, face_id, None),
+                            Entity(face_id, ["face"], face_id, None),
                             confidence, scenario_id, timestamp_now())
 
     def create_object_mention(self, mention: Mention, scenario_id: str):
@@ -153,7 +153,7 @@ class DefaultMentionExtractor(MentionExtractor):
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
-                            Entity(None, [object_label], None, None),
+                            Entity(object_label, [object_label], None, None),
                             confidence, scenario_id, timestamp_now())
 
     def create_text_mention(self, mention: Mention, scenario_id: str):
