@@ -34,7 +34,7 @@ class MentionExtractionService:
 
     def __init__(self, mention_extractor: MentionExtractor,
                  scenario_topic: str, input_topics: List[str], output_topic: str, event_bus: EventBus,
-                 resource_manager: ResourceManager):
+                 resource_manager: ResourceManager, object_rate: int = 5):
         self._event_bus = event_bus
         self._resource_manager = resource_manager
 
@@ -47,6 +47,9 @@ class MentionExtractionService:
         self._app = None
 
         self._scenario_id = None
+
+        self._object_event_cnt = 0
+        self._object_rate = object_rate
 
     def start(self):
         self._topic_worker = TopicWorker(self._input_topics, self._event_bus, provides=[self._output_topic],
@@ -68,21 +71,26 @@ class MentionExtractionService:
         if event.payload.type == ScenarioStopped.__name__:
             self._scenario_id = None
             return
+        if event.payload.type == ScenarioEvent.__name__:
+            return
 
         if not self._scenario_id:
             logger.debug("No active scenario, skipping %s", event.payload.type)
             return
 
+        mention_factory = None
         if event.payload.type == AnnotationEvent.__name__:
             mention_factory = self._mention_extractor.extract_text_mentions
         elif event.payload.type == VectorIdentityEvent.__name__:
             mention_factory = self._mention_extractor.extract_face_mentions
         elif event.payload.type == ObjectRecognitionEvent.__name__:
-            mention_factory = self._mention_extractor.extract_object_mentions
+            if self._object_event_cnt % self._object_rate == 0:
+                mention_factory = self._mention_extractor.extract_object_mentions
+            self._object_event_cnt += 1
         else:
             raise ValueError("Unsupported event type %s", event.payload.type)
 
-        mentions = mention_factory(event.payload.mentions, self._scenario_id)
+        mentions = mention_factory(event.payload.mentions, self._scenario_id) if mention_factory else None
 
         if mentions:
             self._event_bus.publish(self._output_topic, Event.for_payload([asdict(mention) for mention in mentions]))
