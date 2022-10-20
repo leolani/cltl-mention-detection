@@ -108,7 +108,7 @@ class ObjectMentionDetector(MentionDetector):
         return [mention for mention in mentions
                 if (mention.annotations
                     and mention.annotations[0].value is not None
-                    and mention.annotations[0].value.type in _ACCEPTED_OBJECTS)]
+                    and mention.annotations[0].value.label in _ACCEPTED_OBJECTS)]
 
 
 class DefaultMentionExtractor(MentionExtractor):
@@ -149,7 +149,7 @@ class DefaultMentionExtractor(MentionExtractor):
         mention_id = mention.id
         bounds = mention.segment[0].to_tuple()
         # TODO multiple?
-        object_label = mention.annotations[0].value.type
+        object_label = mention.annotations[0].value.label
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
