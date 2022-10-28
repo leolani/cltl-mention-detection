@@ -1,14 +1,13 @@
 import abc
 import logging
-from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
 from cltl.combot.infra.time_util import timestamp_now
-from cltl.commons.discrete import UtteranceType
 from emissor.representation.scenario import Mention
 
-from cltl.mention_extraction.api import MentionExtractor
 import cltl.nlp.api as nlp
+from cltl.mention_extraction.api import MentionExtractor, ImagePerspective, TextPerspective, Perspective, Source, \
+    TextMention, ImageMention, Entity
 
 logger = logging.getLogger(__name__)
 
@@ -16,57 +15,15 @@ logger = logging.getLogger(__name__)
 _ACCEPTED_OBJECTS = {object_type.name for object_type in nlp.ObjectType}
 
 
-@dataclass
-class Source:
-    label: str
-    type: List[str]
-    uri: str
-
-
-@dataclass
-class Entity:
-    label: str
-    type: List[str]
-    id: str
-    uri: str
-
-    @classmethod
-    def create_person(cls, label: str, id_: str, uri: str):
-        return cls(label, ["person"], id_, uri)
-
-
-@dataclass
-class ImageMention:
-    visual: str
-    detection: str
-    source: Source
-    image: str
-    region: Tuple[int, int, int, int]
-    item: Entity
-    confidence: float
-    context_id: str
-    timestamp: int
-    utterance_type: UtteranceType = UtteranceType.IMAGE_MENTION
-
-
-@dataclass
-class TextMention:
-    chat: str
-    turn: str
-    author: Entity
-    utterance: str
-    position: str
-    item: Entity
-    confidence: float
-    context_id: str
-    timestamp: int
-    utterance_type: UtteranceType = UtteranceType.TEXT_MENTION
-
-
 _IMAGE_SOURCE = Source("front-camera", ["sensor"], "http://cltl.nl/leolani/inputs/front-camera")
 
 
 class MentionDetector(abc.ABC):
+    """Detect mentions that contribute to knowledge.
+
+    Select a subset of Mentions for further extraction, e.g. to prevent duplication or reduce
+    the amount of information.
+    """
     def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
         return mentions
 
@@ -81,6 +38,16 @@ class TextMentionDetector(MentionDetector):
                 filtered.append(Mention(mention.id, mention.segment, annotations))
 
         return filtered
+
+
+class TextPerspectiveDetector(MentionDetector):
+    # Nothing to filter
+    pass
+
+
+class ImagePerspectiveDetector(MentionDetector):
+    # Nothing to filter
+    pass
 
 
 class NewFaceMentionDetector(MentionDetector):
@@ -112,14 +79,24 @@ class ObjectMentionDetector(MentionDetector):
 
 
 class DefaultMentionExtractor(MentionExtractor):
-    def __init__(self, text_detector: MentionDetector, face_detector: MentionDetector, object_detector: MentionDetector):
+    def __init__(self, text_detector: MentionDetector,
+                 text_perspective_detector: TextPerspectiveDetector,
+                 image_perspective_detector: TextPerspectiveDetector,
+                 face_detector: MentionDetector,
+                 object_detector: MentionDetector):
         self._text_detector = text_detector
+        self._text_perspective_detector = text_perspective_detector
+        self._image_perspective_detector = image_perspective_detector
         self._face_detector = face_detector
         self._object_detector = object_detector
 
     def extract_text_mentions(self, mentions: List[Mention], scenario_id: str) -> List[TextMention]:
         return [self.create_text_mention(mention, scenario_id)
                 for mention in self._text_detector.filter_mentions(mentions, scenario_id)]
+
+    def extract_text_perspective(self, mentions: List[Mention], scenario_id: str) -> List[TextPerspective]:
+        return [self.create_text_perspective(mention, scenario_id)
+                for mention in self._text_perspective_detector.filter_mentions(mentions, scenario_id)]
 
     def extract_object_mentions(self, mentions: List[Mention], scenario_id: str) -> List[ImageMention]:
         return [self.create_object_mention(mention, scenario_id)
@@ -128,6 +105,10 @@ class DefaultMentionExtractor(MentionExtractor):
     def extract_face_mentions(self, mentions: List[Mention], scenario_id: str) -> List[ImageMention]:
         return [self.create_face_mention(mention, scenario_id)
                 for mention in self._face_detector.filter_mentions(mentions, scenario_id)]
+
+    def extract_face_perspective(self, mentions: List[Mention], scenario_id: str) -> List[ImagePerspective]:
+        return [self.create_image_perspective(mention, scenario_id)
+                for mention in self._image_perspective_detector.filter_mentions(mentions, scenario_id)]
 
     def create_face_mention(self, mention: Mention, scenario_id: str):
         image_id = mention.id
@@ -139,7 +120,7 @@ class DefaultMentionExtractor(MentionExtractor):
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
-                            Entity(face_id, ["face"], face_id, None),
+                            Entity(face_id, ["face"], face_id, None), {},
                             confidence, scenario_id, timestamp_now())
 
     def create_object_mention(self, mention: Mention, scenario_id: str):
@@ -153,7 +134,7 @@ class DefaultMentionExtractor(MentionExtractor):
         confidence = 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
-                            Entity(object_label, [object_label], None, None),
+                            Entity(object_label, [object_label], None, None), {},
                             confidence, scenario_id, timestamp_now())
 
     def create_text_mention(self, mention: Mention, scenario_id: str):
@@ -168,5 +149,34 @@ class DefaultMentionExtractor(MentionExtractor):
         confidence = 1.0
 
         return TextMention(scenario_id, signal_id, author, utterance, f"{segment.start} - {segment.stop}",
-                           Entity(entity_text, [entity_type], None, None),
+                           Entity(entity_text, [entity_type], None, None), {},
                            confidence, scenario_id, timestamp_now())
+
+    def create_text_perspective(self, mention, scenario_id):
+        author = Entity.create_person("SPEAKER", None, None)
+
+        utterance = ""
+
+        segment = mention.segment[0]
+        signal_id = segment.container_id
+        perspective = f"{mention.annotations[0].value.value}:{mention.annotations[0].value.value}"
+        confidence = mention.annotations[0].value.confidence
+
+        return TextPerspective(scenario_id, signal_id, author, utterance, f"{segment.start} - {segment.stop}",
+                               author, Perspective(perspective, confidence), scenario_id, timestamp_now())
+
+    def create_image_perspective(self, mention, scenario_id):
+        # TODO
+        speaker = Entity.create_person("SPEAKER", None, None)
+        # TODO
+        image_id = mention.id
+        image_path = mention.id
+
+        mention_id = mention.id
+        bounds = mention.segment[0].bounds
+        # TODO multiple?
+        perspective = f"{mention.annotations[0].value.type}:{mention.annotations[0].value.value}"
+        confidence = mention.annotations[0].value.confidence
+
+        return ImagePerspective(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
+                                speaker, Perspective(perspective, confidence), scenario_id, timestamp_now())

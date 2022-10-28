@@ -31,6 +31,7 @@ setup(
         "service": [
             "cltl.face-recognition",
             "cltl.object-recognition",
+            "cltl.emotionrecognition",
             "cltl.brain",
             "emissor",
             "flask"

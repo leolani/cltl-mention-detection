@@ -7,8 +7,11 @@ from cltl.combot.infra.config import ConfigurationManager
 from cltl.combot.infra.event import Event, EventBus
 from cltl.combot.infra.resource import ResourceManager
 from cltl.combot.infra.topic_worker import TopicWorker
+from cltl_service.emotion_extraction.schema import EmotionRecognitionEvent
+import cltl_service.face_emotion_extraction.schema
 from cltl_service.object_recognition.schema import ObjectRecognitionEvent
 from cltl_service.vector_id.schema import VectorIdentityEvent
+from emissor.representation.scenario import class_type
 
 from cltl.mention_extraction.api import MentionExtractor
 
@@ -106,6 +109,10 @@ class MentionExtractionService:
             if self._object_event_cnt % self._object_rate == 0:
                 mention_factory = self._mention_extractor.extract_object_mentions
             self._object_event_cnt += 1
+        elif event.payload.type == class_type(EmotionRecognitionEvent):
+            mention_factory = self._mention_extractor.extract_text_perspective
+        elif event.payload.type == class_type(cltl_service.face_emotion_extraction.schema.EmotionRecognitionEvent):
+            mention_factory = self._mention_extractor.extract_face_perspective
         else:
             raise ValueError("Unsupported event type %s", event.payload.type)
 
