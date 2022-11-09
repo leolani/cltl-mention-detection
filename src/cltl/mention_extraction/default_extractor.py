@@ -3,7 +3,8 @@ import logging
 from typing import List
 
 from cltl.combot.infra.time_util import timestamp_now
-from emissor.representation.scenario import Mention
+from cltl.combot.event.emissor import ConversationalAgent
+from emissor.representation.scenario import Mention, class_type
 
 import cltl.nlp.api as nlp
 from cltl.mention_extraction.api import MentionExtractor, ImagePerspective, TextPerspective, Perspective, Source, \
@@ -138,7 +139,7 @@ class DefaultMentionExtractor(MentionExtractor):
                             confidence, scenario_id, timestamp_now())
 
     def create_text_mention(self, mention: Mention, scenario_id: str):
-        author = Entity.create_person("SPEAKER", None, None)
+        author = self._get_speaker()
 
         utterance = ""
 
@@ -153,7 +154,7 @@ class DefaultMentionExtractor(MentionExtractor):
                            confidence, scenario_id, timestamp_now())
 
     def create_text_perspective(self, mention, scenario_id):
-        author = Entity.create_person("SPEAKER", None, None)
+        author = self._get_speaker()
 
         utterance = ""
 
@@ -167,10 +168,11 @@ class DefaultMentionExtractor(MentionExtractor):
 
     def create_image_perspective(self, mention, scenario_id):
         # TODO
-        speaker = Entity.create_person("SPEAKER", None, None)
-        # TODO
         image_id = mention.id
         image_path = mention.id
+
+        # speaker = Entity(face_id, ["face"], face_id, None)
+        speaker = self._get_speaker()
 
         mention_id = mention.id
         bounds = mention.segment[0].bounds
@@ -180,3 +182,7 @@ class DefaultMentionExtractor(MentionExtractor):
 
         return ImagePerspective(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
                                 speaker, Perspective(perspective, confidence), scenario_id, timestamp_now())
+
+    def _get_speaker(self):
+        return Entity(ConversationalAgent.SPEAKER.name, [class_type(ConversationalAgent)], None, None)
+
