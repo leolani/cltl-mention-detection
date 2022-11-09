@@ -160,7 +160,7 @@ class DefaultMentionExtractor(MentionExtractor):
 
         segment = mention.segment[0]
         signal_id = segment.container_id
-        perspective = f"{mention.annotations[0].value.value}:{mention.annotations[0].value.value}"
+        perspective = f"{mention.annotations[0].value.type}:{mention.annotations[0].value.value}"
         confidence = mention.annotations[0].value.confidence
 
         return TextPerspective(scenario_id, signal_id, author, utterance, f"{segment.start} - {segment.stop}",
