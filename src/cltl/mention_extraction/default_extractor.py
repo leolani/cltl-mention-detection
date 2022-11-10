@@ -33,12 +33,25 @@ class TextMentionDetector(MentionDetector):
     def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
         filtered = []
         for mention in mentions:
-            annotations = [annotation for annotation in mention.annotations
-                           if (annotation.type == nlp.NamedEntity.__name__ or annotation.type == nlp.Entity.__name__)]
+            annotations = [annotation for annotation in mention.annotations if self._is_entity(annotation)]
             if annotations:
                 filtered.append(Mention(mention.id, mention.segment, annotations))
 
         return filtered
+
+    def _is_entity(self, annotation):
+        if annotation.type == nlp.NamedEntity.__name__:
+            return True
+
+        if annotation.type == nlp.Entity.__name__:
+            if (isinstance(annotation.value.type, nlp.EntityType)
+                    and annotation.value.type not in [nlp.EntityType.SPEAKER, nlp.EntityType.HEARER]):
+                return True
+            if (isinstance(annotation.value.type, str)
+                    and annotation.value.type not in [nlp.EntityType.SPEAKER.name.lower(), nlp.EntityType.HEARER.name.lower()]):
+                return True
+
+        return False
 
 
 class TextPerspectiveDetector(MentionDetector):

@@ -119,5 +119,5 @@ class MentionExtractionService:
         mentions = mention_factory(event.payload.mentions, self._scenario_id) if mention_factory else None
 
         if mentions:
-            logger.debug("Detected %s mentions", len(mentions))
+            logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             self._event_bus.publish(self._output_topic, Event.for_payload([asdict(mention) for mention in mentions]))
