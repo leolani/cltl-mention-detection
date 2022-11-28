@@ -46,7 +46,7 @@ class SpacyNLP(NLP):
                         type = EntityType.OBJECT
 
                 if type:
-                    entities.append(Entity(token.text, type, (token.idx, token.idx + len(token.text))))
+                    entities.append(Entity(token.lemma_.lower(), type, (token.idx, token.idx + len(token.text))))
 
                 predicates[head_id][token.dep_] = token.lemma_
 
