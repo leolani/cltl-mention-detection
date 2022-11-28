@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import List
 
 import spacy
 
@@ -9,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 _ACCEPTED_OBJECTS = {object_type.name.lower() for object_type in ObjectType}
-_RELATIONS = {'nsubj', 'nsubjpass', 'dobj', 'prep', 'pcomp', 'acomp'}
+_RELATIONS = ('nsubj', 'nsubjpass', 'dobj', 'prep', 'pcomp', 'acomp')
 
 
 class SpacyNLP(NLP):
-    def __init__(self, spacy_model: str = "en_core_web_sm"):
+    def __init__(self, spacy_model: str = "en_core_web_sm", relations: List[str] = _RELATIONS):
         self._nlp = spacy.load(spacy_model)
+        self._relations = set(relations)
 
     def analyze(self, text: str) -> Doc:
         doc = self._nlp(text)
@@ -30,7 +32,7 @@ class SpacyNLP(NLP):
 
         entities = []
         for token in doc:
-            if token.dep_ in _RELATIONS:
+            if token.dep_ in self._relations:
                 head_id = token.head.i
                 if head_id not in predicates:
                     predicates[head_id] = dict()
