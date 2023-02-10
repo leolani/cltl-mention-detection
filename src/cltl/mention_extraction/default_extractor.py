@@ -1,12 +1,14 @@
 import abc
 import logging
+from enum import Enum
 from typing import List
 
 from cltl.combot.infra.time_util import timestamp_now
 from cltl.combot.event.emissor import ConversationalAgent
-from emissor.representation.scenario import Mention, class_type
+from emissor.representation.scenario import Mention, class_type, Annotation
 
 import cltl.nlp.api as nlp
+
 from cltl.mention_extraction.api import MentionExtractor, ImagePerspective, TextPerspective, Perspective, Source, \
     TextMention, ImageMention, Entity
 
@@ -60,8 +62,21 @@ class TextPerspectiveDetector(MentionDetector):
 
 
 class ImagePerspectiveDetector(MentionDetector):
-    # Nothing to filter
-    pass
+    def __init__(self, threshold: float):
+        self._threshold = threshold
+
+    def is_above_threshold(self, annotation: Annotation) -> bool:
+        if annotation.value.confidence < self._threshold or annotation.value.type == 'NEUTRAL':
+            return False
+
+        if isinstance(annotation.value.type, Enum) and annotation.value.type.name == 'NEUTRAL':
+            return False
+
+        return True
+
+    def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
+        return [mention for mention in mentions
+                if any(self.is_above_threshold(annotation) for annotation in mention.annotations)]
 
 
 class NewFaceMentionDetector(MentionDetector):
@@ -95,7 +110,7 @@ class ObjectMentionDetector(MentionDetector):
 class DefaultMentionExtractor(MentionExtractor):
     def __init__(self, text_detector: MentionDetector,
                  text_perspective_detector: TextPerspectiveDetector,
-                 image_perspective_detector: TextPerspectiveDetector,
+                 image_perspective_detector: ImagePerspectiveDetector,
                  face_detector: MentionDetector,
                  object_detector: MentionDetector):
         self._text_detector = text_detector
@@ -184,14 +199,18 @@ class DefaultMentionExtractor(MentionExtractor):
         image_id = mention.id
         image_path = mention.id
 
-        # speaker = Entity(face_id, ["face"], face_id, None)
         speaker = self._get_speaker()
 
         mention_id = mention.id
         bounds = mention.segment[0].bounds
-        # TODO multiple?
-        perspective = f"{mention.annotations[0].value.type}:{mention.annotations[0].value.value}"
-        confidence = mention.annotations[0].value.confidence
+
+        annotations = filter(self._image_perspective_detector.is_above_threshold, mention.annotations)
+        annotations = sorted(annotations, key = lambda ann: ann.value.confidence, reverse=True)
+        # annotations should not empty, as filtered already by the _image_perspective_detector
+        primary_emotion = next(iter(annotations)).value
+
+        perspective = f"{primary_emotion.type}:{primary_emotion.value}"
+        confidence = primary_emotion.confidence
 
         return ImagePerspective(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
                                 speaker, Perspective(perspective, confidence), scenario_id, timestamp_now())
