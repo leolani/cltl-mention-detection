@@ -15,7 +15,7 @@ from cltl.mention_extraction.api import MentionExtractor, ImagePerspective, Text
 logger = logging.getLogger(__name__)
 
 
-_ACCEPTED_OBJECTS = {object_type.name for object_type in nlp.ObjectType}
+_ACCEPTED_OBJECTS = {object_type.value.lower() for object_type in nlp.ObjectType}
 
 
 _IMAGE_SOURCE = Source("front-camera", ["sensor"], "http://cltl.nl/leolani/inputs/front-camera")
@@ -100,11 +100,18 @@ class NewFaceMentionDetector(MentionDetector):
 
 
 class ObjectMentionDetector(MentionDetector):
+    def __init__(self):
+        self._previous = set()
+
     def filter_mentions(self, mentions: List[Mention], scenario_id: str) -> List[Mention]:
-        return [mention for mention in mentions
+        observed = [mention for mention in mentions
                 if (mention.annotations
                     and mention.annotations[0].value is not None
-                    and mention.annotations[0].value.label in _ACCEPTED_OBJECTS)]
+                    and mention.annotations[0].value.label.lower() in _ACCEPTED_OBJECTS
+                    and mention.annotations[0].value.label.lower() not in self._previous)]
+        self._previous = set(mention.annotations[0].value.label.lower() for mention in observed)
+
+        return observed
 
 
 class DefaultMentionExtractor(MentionExtractor):
@@ -157,10 +164,10 @@ class DefaultMentionExtractor(MentionExtractor):
         image_path = mention.id
 
         mention_id = mention.id
-        bounds = mention.segment[0].to_tuple()
+        bounds = mention.segment[0].bounds
         # TODO multiple?
         object_label = mention.annotations[0].value.label
-        confidence = 1.0
+        confidence = mention.annotations[0].value.confidence if hasattr(mention.annotations[0].value, 'confidence') else 1.0
 
         return ImageMention(image_id, mention_id, _IMAGE_SOURCE, image_path, bounds,
                             Entity(object_label, [object_label], None, None), {},
