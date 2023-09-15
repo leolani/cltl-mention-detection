@@ -19,7 +19,7 @@ include util/make/makefile.git.mk
 build: spacy.lock
 
 
-spacy.lock:
+spacy.lock: venv
 	source venv/bin/activate; python -m spacy download en
 	touch spacy.lock
 
