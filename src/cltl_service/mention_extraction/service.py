@@ -2,13 +2,13 @@ import logging
 from dataclasses import asdict
 from typing import List
 
+import cltl_service.face_emotion_extraction.schema
 from cltl.combot.event.emissor import AnnotationEvent, ScenarioEvent, ScenarioStarted, ScenarioStopped
 from cltl.combot.infra.config import ConfigurationManager
 from cltl.combot.infra.event import Event, EventBus
 from cltl.combot.infra.resource import ResourceManager
 from cltl.combot.infra.topic_worker import TopicWorker
 from cltl_service.emotion_extraction.schema import EmotionRecognitionEvent
-import cltl_service.face_emotion_extraction.schema
 from cltl_service.object_recognition.schema import ObjectRecognitionEvent
 from cltl_service.vector_id.schema import VectorIdentityEvent
 from emissor.representation.scenario import class_type
@@ -122,3 +122,23 @@ class MentionExtractionService:
         if mentions:
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             self._event_bus.publish(self._output_topic, Event.for_payload([asdict(mention) for mention in mentions]))
+
+        # TODO Temporary code to create a better conversation
+        if mentions and event.payload.type == ObjectRecognitionEvent.__name__:
+            from collections import Counter
+            from random import choice
+            from cltl.combot.infra.time_util import timestamp_now
+            from cltl.combot.event.emissor import TextSignalEvent
+            from emissor.representation.scenario import TextSignal
+
+            logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
+            object_counts = Counter(mention.item.label for mention in mentions)
+
+            I_SEE = ["I see", "I can see", "I think I see", "I observe",]
+            counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
+                                for label, count in object_counts.items()])
+            counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
+            utterance =  f"{choice(I_SEE)} {counts}"
+
+            signal = TextSignal.for_scenario(self._scenario_id, timestamp_now(), timestamp_now(), None, utterance)
+            self._event_bus.publish("cltl.topic.text_out", Event.for_payload(TextSignalEvent.for_agent(signal)))
