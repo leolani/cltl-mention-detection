@@ -109,7 +109,8 @@ class ObjectMentionDetector(MentionDetector):
                     and mention.annotations[0].value is not None
                     and mention.annotations[0].value.label.lower() in _ACCEPTED_OBJECTS
                     and mention.annotations[0].value.label.lower() not in self._previous)]
-        self._previous = set(mention.annotations[0].value.label.lower() for mention in observed)
+
+        self._previous = set(mention.annotations[0].value.label.lower() for mention in mentions)
 
         return observed
 
