@@ -133,3 +133,6 @@ dmypy.json
 
 makefile.d
 spacy.lock
+
+
+**/.DS_Store
