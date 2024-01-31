@@ -79,7 +79,7 @@ class MentionExtractionService:
 
     def _process(self, event: Event):
         if event.metadata.topic == self._intention_topic:
-            self._active_intentions = set(event.payload.intentions)
+            self._active_intentions = {intention.label for intention in event.payload.intentions}
             logger.info("Set active intentions to %s", self._active_intentions)
             return
 
