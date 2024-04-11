@@ -139,9 +139,12 @@ class MentionExtractionService:
             object_counts = Counter(mention.item.label for mention in mentions)
 
             if self._language=="nl":
-                I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je",]
+                I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je","Wat zie ik nu!"]
+                dutch_counts = {}
                 for object, cnt in object_counts:
                     object = object_label_translation.to_dutch(object)
+                    dutch_counts[object]=cnt
+                object_counts = dutch_counts
             else:
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
             counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
