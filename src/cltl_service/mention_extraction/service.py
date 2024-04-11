@@ -14,6 +14,7 @@ from cltl_service.vector_id.schema import VectorIdentityEvent
 from emissor.representation.scenario import class_type
 
 from cltl.mention_extraction.api import MentionExtractor
+from cltl.mention_extraction import object_label_translation
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class MentionExtractionService:
         scenario_topic = config.get("topic_scenario")
         intentions = config.get("intentions", multi=True)
         intention_topic = config.get("topic_intention")
+        mention_extractor._language = config.get("language")
 
         return cls(mention_extractor, scenario_topic, input_topics, output_topic, intentions, intention_topic,
                    event_bus, resource_manager)
@@ -61,6 +63,8 @@ class MentionExtractionService:
 
         self._object_event_cnt = 0
         self._object_rate = object_rate
+
+        self._language = "en"
 
     def start(self):
         self._topic_worker = TopicWorker(self._input_topics, self._event_bus, provides=[self._output_topic],
@@ -134,7 +138,12 @@ class MentionExtractionService:
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             object_counts = Counter(mention.item.label for mention in mentions)
 
-            I_SEE = ["I see", "I can see", "I think I see", "I observe",]
+            if self._language=="nl":
+                I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je",]
+                for object, cnt in object_counts:
+                    object = object_label_translation.to_dutch(object)
+            else:
+                I_SEE = ["I see", "I can see", "I think I see", "I observe",]
             counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
                                 for label, count in object_counts.items()])
             counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
