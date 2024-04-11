@@ -138,17 +138,21 @@ class MentionExtractionService:
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             object_counts = Counter(mention.item.label for mention in mentions)
 
+            counts = ""
             if self._language=="nl":
                 I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je","Wat zie ik nu!"]
                 dutch_counts = {}
                 for object, cnt in object_counts:
                     object = object_label_translation.to_dutch(object)
                     dutch_counts[object]=cnt
-                object_counts = dutch_counts
+                counts = ', '.join([f"{count if count > 1 else 'een'} {label}{'en' if count> 1 else ''}"
+                                for label, count in dutch_counts.items()])
             else:
+                ### English
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
-            counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
+                counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
                                 for label, count in object_counts.items()])
+
             counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
             utterance =  f"{choice(I_SEE)} {counts}"
 
