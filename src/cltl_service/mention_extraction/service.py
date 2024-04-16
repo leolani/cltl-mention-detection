@@ -144,7 +144,7 @@ class MentionExtractionService:
                     forms = object_label_translation.to_dutch(object)
                     dutch_counts.append({'singular': forms[0], 'plural':forms[1], 'cnt': cnt})
                 object_counts = dutch_counts
-                counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'}{result['plural'] if result['cnt']> 1 else result['singular']}"
+                counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'} {result['plural'] if result['cnt']> 1 else result['singular']}"
                                 for result in object_counts])
             else:
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
