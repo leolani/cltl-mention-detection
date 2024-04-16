@@ -145,11 +145,11 @@ class MentionExtractionService:
                     dutch_counts.append({'singular': forms[0], 'plural':forms[1], 'cnt': cnt})
                 object_counts = dutch_counts
                 counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'}{result['plural'] if result['cnt']> 1 else result['singular']}"
-                                for result in object_counts.items()])
+                                for result in object_counts])
             else:
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
                 counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
-                                    for label, count in object_counts])
+                                    for label, count in object_counts.items()])
             counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
             utterance =  f"{choice(I_SEE)} {counts}"
 
