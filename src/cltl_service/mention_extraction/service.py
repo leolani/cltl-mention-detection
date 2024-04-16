@@ -36,14 +36,14 @@ class MentionExtractionService:
         scenario_topic = config.get("topic_scenario")
         intentions = config.get("intentions", multi=True)
         intention_topic = config.get("topic_intention")
-        mention_extractor._language = config.get("language")
+        language = config.get("language")
 
         return cls(mention_extractor, scenario_topic, input_topics, output_topic, intentions, intention_topic,
-                   event_bus, resource_manager)
+                   event_bus, resource_manager, language)
 
     def __init__(self, mention_extractor: MentionExtractor,
                  scenario_topic: str, input_topics: List[str], output_topic: str, intentions: List[str], intention_topic: str,
-                 event_bus: EventBus, resource_manager: ResourceManager, object_rate: int = 5):
+                 event_bus: EventBus, resource_manager: ResourceManager, language: str = "en", object_rate: int = 5):
         self._event_bus = event_bus
         self._resource_manager = resource_manager
 
@@ -64,7 +64,7 @@ class MentionExtractionService:
         self._object_event_cnt = 0
         self._object_rate = object_rate
 
-        self._language = "en"
+        self._language = language
 
     def start(self):
         self._topic_worker = TopicWorker(self._input_topics, self._event_bus, provides=[self._output_topic],
@@ -137,22 +137,19 @@ class MentionExtractionService:
 
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             object_counts = Counter(mention.item.label for mention in mentions)
-
-            counts = ""
             if self._language=="nl":
                 I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je","Wat zie ik nu!"]
-                dutch_counts = {}
-                for object, cnt in object_counts:
-                    object = object_label_translation.to_dutch(object)
-                    dutch_counts[object]=cnt
-                counts = ', '.join([f"{count if count > 1 else 'een'} {label}{'en' if count> 1 else ''}"
-                                for label, count in dutch_counts.items()])
+                dutch_counts = []
+                for object, cnt in object_counts.items():
+                    forms = object_label_translation.to_dutch(object)
+                    dutch_counts.append({'singular': forms[0], 'plural':forms[1], 'cnt': cnt})
+                object_counts = dutch_counts
+                counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'}{result['plural'] if result['cnt']> 1 else result['singular']}"
+                                for result in object_counts.items()])
             else:
-                ### English
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
                 counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
-                                for label, count in object_counts.items()])
-
+                                    for label, count in object_counts])
             counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
             utterance =  f"{choice(I_SEE)} {counts}"
 
