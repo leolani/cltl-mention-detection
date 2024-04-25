@@ -138,12 +138,20 @@ class MentionExtractionService:
 
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             object_counts = Counter(mention.item.label for mention in mentions)
+            GREET = ""
             if self._language=="nl":
                 I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je","Wat zie ik nu!"]
+                I_GREET_ONE = ["Kijk een mens. Hoi", "Hallo jij daar", "Hallo hallo. Goed je te zien","Leuk je te zien mens", "Welkom en fijn dat je er bent", "Wat goed dat je gekomen bent", "Nou dat vind ik pas leuk je te zien", "En wie hebben we hier dan", "Kom binnen, kom binnen", "Wat fijn dat je er bent"]
+                I_GREET_TWO = ["He mensen. Ik groet jullie", "Hallo, hoi, goed jullie te zien","Aah dat wordt gezellig met jullie", "Leuk jullie te zien", "Mense, kom binnen", "Fijn, jullie zijn er ook", "Welkom en fijn dat jullie er zijn", "Wat goed dat jullie gekomen zijn", "Nou dat vind ik pas leuk jullie te zien", "En wie hebben we hier dan", "Kom binnen, kom binnen", "Wat fijn dat jullie er zijn"]
                 dutch_counts = []
                 for object, cnt in object_counts.items():
                     forms = object_label_translation.to_dutch(object)
                     dutch_counts.append({'singular': forms[0], 'plural':forms[1], 'cnt': cnt})
+                    if object == "person":
+                	    if cnt==1:
+	                    	GREET = ". "+ choice(I_GREET_ONE)
+	                    else:
+	                        GREET = ". "+ choice(I_GREET_TWO)
                 object_counts = dutch_counts
                 counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'} {result['plural'] if result['cnt']> 1 else result['singular']}"
                                 for result in object_counts])
@@ -153,7 +161,14 @@ class MentionExtractionService:
                 counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
                                     for label, count in object_counts.items()])
                 counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
-            utterance =  f"{choice(I_SEE)} {counts}"
+                if "person" in object_counts:
+                    cnt = object_counts["person"]
+                    if cnt==1:
+	                    GREET = ". Nice to see you human!"
+                    else:
+	                    GREET = ". Nice to see you folks!"
+
+            utterance =  f"{choice(I_SEE)} {counts}{GREET}"
 
             signal = TextSignal.for_scenario(self._scenario_id, timestamp_now(), timestamp_now(), None, utterance)
             self._event_bus.publish("cltl.topic.text_out", Event.for_payload(TextSignalEvent.for_agent(signal)))
