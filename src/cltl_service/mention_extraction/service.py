@@ -28,6 +28,7 @@ class MentionExtractionService:
                     event_bus: EventBus,
                     resource_manager: ResourceManager,
                     config_manager: ConfigurationManager):
+        langconfig = config_manager.get_config("cltl.language")
         config = config_manager.get_config("cltl.mention_extraction.events")
 
         input_topics = config.get("topics_in", multi=True)
@@ -36,7 +37,7 @@ class MentionExtractionService:
         scenario_topic = config.get("topic_scenario")
         intentions = config.get("intentions", multi=True)
         intention_topic = config.get("topic_intention")
-        language = config.get("language")
+        language = langconfig.get("language")
 
         return cls(mention_extractor, scenario_topic, input_topics, output_topic, intentions, intention_topic,
                    event_bus, resource_manager, language)
@@ -146,11 +147,12 @@ class MentionExtractionService:
                 object_counts = dutch_counts
                 counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'} {result['plural'] if result['cnt']> 1 else result['singular']}"
                                 for result in object_counts])
+                counts = (counts[::-1].replace(' ,', ' ne ', 1))[::-1]
             else:
                 I_SEE = ["I see", "I can see", "I think I see", "I observe",]
                 counts = ', '.join([f"{count if count > 1 else 'a'} {label}{'s' if count> 1 else ''}"
                                     for label, count in object_counts.items()])
-            counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
+                counts = (counts[::-1].replace(' ,', ' dna ', 1))[::-1]
             utterance =  f"{choice(I_SEE)} {counts}"
 
             signal = TextSignal.for_scenario(self._scenario_id, timestamp_now(), timestamp_now(), None, utterance)
