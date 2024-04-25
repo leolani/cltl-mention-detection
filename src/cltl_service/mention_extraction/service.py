@@ -30,7 +30,7 @@ class MentionExtractionService:
                     config_manager: ConfigurationManager):
         langconfig = config_manager.get_config("cltl.language")
         config = config_manager.get_config("cltl.mention_extraction.events")
-
+        object_rate = int(config.get("object_rate"))
         input_topics = config.get("topics_in", multi=True)
         output_topic = config.get("topic_out")
 
@@ -40,7 +40,7 @@ class MentionExtractionService:
         language = langconfig.get("language")
 
         return cls(mention_extractor, scenario_topic, input_topics, output_topic, intentions, intention_topic,
-                   event_bus, resource_manager, language)
+                   event_bus, resource_manager, language, object_rate)
 
     def __init__(self, mention_extractor: MentionExtractor,
                  scenario_topic: str, input_topics: List[str], output_topic: str, intentions: List[str], intention_topic: str,
