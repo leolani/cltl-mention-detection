@@ -19,6 +19,41 @@ from cltl.mention_extraction import object_label_translation
 logger = logging.getLogger(__name__)
 
 
+_OBJECT_RESPONSE = {        
+        "tas": ["wat een mooie tas","waar heb je die tas gekocht"],
+        "bril": ["mooie bril, van Hans?"],
+        "stropdas": ["wat een bijzondere stropdas"],
+        "jas": ["een leuk jas heb je aan", "Die jas staat u geweldig", "We hebben een mooie garderobe als u uw jas kwijt wilt"],
+        "rugzak": ["wat een fantastische rugzak","Passen er veel spullen in die mooie rugzak?", "Waar heeft u die mooie rugzak gekocht?"],
+        "paraplu": ["Jeetje, regent het buiten?", "Heeft u die paraplu nodig gehad vandaag?", "Wat een mooie paraplu heeft u"],
+        "wijnglas": ["Helaas mag uw consumptie niet mee de zaal in", "Houd uw wijnglas alstublieft niet in mijn buurt", "Houd u over het algemeen meer van witte of rode wijn?"],
+        "koffer": ["Bent u net op reis geweest met die mooie koffer?", "Wat een mooie koffer", "Wat een stijlvolle koffer"],
+        "boek": ["Wat voor leuks leest u?", "U zult uw boek niet nodig hebben in deze leuke voorstelling", "Bent u een lezer? bekijk vooral dan ook ons programmaboekje"],
+        "telefoon": ["Vergeet uw telefoon niet uit te zetten tijdens de voorstelling", "Mooie telefoon heeft u, die heeft vast veel gekost", "Mag ik ook eens bellen met uw telefoon?"],
+        "knuffelbeer": ["Wat een lieve knuffel heb jij"],
+        "bril": ["Wat voor sterkte heeft u?", "Zo een mooie bril heb ik nog nooit gezien"],
+        "tas": ["Is die tas wel van u?", "U kunt uw tas ook achterlaten bij de garderobe"], 
+        "tanden": ["Wat een mooie glimlach heeft u!", "Wat een mooie mond met tanden heeft u. U zou niet misstaan in een Colgate reclame"],
+        "cup": ["Helaas mag uw consumptie niet mee de zaal in", "Houd uw kop alstublieft niet in mijn buurt", "Houd u over het algemeen meer van koffie of thee?"],
+        "handbag": ["wat een mooie tas","waar heb je die tas gekocht"],
+        "glasses": ["mooie bril, van Hans?"],
+        "tie": ["wat een bijzondere stropdas"],
+        "coat": ["een leuk jas heb je aan", "Die jas staat u geweldig", "We hebben een mooie garderobe als u uw jas kwijt wilt"],
+        "backpack": ["wat een fantastische rugzak","Passen er veel spullen in die mooie rugzak?", "Waar heeft u die mooie rugzak gekocht?"],
+        "umbrella": ["Jeetje, regent het buiten?", "Heeft u die paraplu nodig gehad vandaag?", "Wat een mooie paraplu heeft u."],
+        "wine glass": ["Helaas mag uw consumptie niet mee de zaal in", "Houd uw wijnglas alstublieft niet in mijn buurt", "Houd u over het algemeen meer van witte of rode wijn?"],
+        "suitcase": ["Bent u net op reis geweest met die mooie koffer?", "Wat een mooie koffer", "Wat een stijlvolle koffer"],
+        "book": ["Wat voor leuks leest u?", "U zult uw boek niet nodig hebben in deze leuke voorstelling", "Bent u een lezer? bekijk vooral dan ook ons programmaboekje"],
+        "cell phone": ["Vergeet uw telefoon niet uit te zetten tijdens de voorstelling", "Mooie telefoon heeft u, die heeft vast veel gekost", "Mag ik ook eens bellen met uw telefoon?", "Je mag wel een selfie nemen met je telefoon. Smile.", "Wil je misschien een selfie nemen? Vind ik geen probleem hoor."],
+        "teddy bear": ["Wat een lieve knuffel heb jij"],
+        "bird": ["Zie ik daar nu een vogel?", "Wat doet een vogel nu hier? Zie jij die ook?", "Kijk daar, een vogel."],
+        "laptop": ["Waarom heb jij een laptop bij je? Stop nu eens met werken", "Wat een mooie laptop. Programmeer jij zelf ook?", "Is die laptop van jou?"],
+        "glasses": ["Wat voor sterkte heeft u?", "Zo een mooie bril heb ik nog nooit gezien"],
+        "tas": ["Is die tas wel van u?", "U kunt uw tas ook achterlaten bij de garderobe"], 
+        "tanden": ["Wat een mooie glimlach heeft u!", "Wat een mooie mond met tanden heeft u. U zou niet misstaan in een Colgate reclame"]
+    }
+    
+
 class MentionExtractionService:
     """
     Service used to integrate the component into applications.
@@ -139,19 +174,22 @@ class MentionExtractionService:
             logger.debug("Detected %s mentions from %s", len(mentions), mention_factory.__name__)
             object_counts = Counter(mention.item.label for mention in mentions)
             GREET = ""
+            FOLLOW_UP =""
             if self._language=="nl":
                 I_SEE = ["Ik zie", "Zie ik dat goed", "Kijk daar heb je","Wat zie ik nu!"]
                 I_GREET_ONE = ["Kijk een mens. Hoi", "Hallo jij daar", "Hallo hallo. Goed je te zien","Leuk je te zien mens", "Welkom en fijn dat je er bent", "Wat goed dat je gekomen bent", "Nou dat vind ik pas leuk je te zien", "En wie hebben we hier dan", "Kom binnen, kom binnen", "Wat fijn dat je er bent"]
-                I_GREET_TWO = ["He mensen. Ik groet jullie", "Hallo, hoi, goed jullie te zien","Aah dat wordt gezellig met jullie", "Leuk jullie te zien", "Mense, kom binnen", "Fijn, jullie zijn er ook", "Welkom en fijn dat jullie er zijn", "Wat goed dat jullie gekomen zijn", "Nou dat vind ik pas leuk jullie te zien", "En wie hebben we hier dan", "Kom binnen, kom binnen", "Wat fijn dat jullie er zijn"]
+                I_GREET_TWO = ["He mensen. Ik groet jullie", "Hallo, hoi, goed jullie te zien","Aah dat wordt gezellig met jullie", "Leuk jullie te zien", "Mensen, kom binnen", "Fijn, jullie zijn er ook", "Welkom en fijn dat jullie er zijn", "Wat goed dat jullie gekomen zijn", "Nou dat vind ik pas leuk jullie te zien", "En wie hebben we hier dan", "Kom binnen, kom binnen", "Wat fijn dat jullie er zijn"]
                 dutch_counts = []
                 for object, cnt in object_counts.items():
                     forms = object_label_translation.to_dutch(object)
                     dutch_counts.append({'singular': forms[0], 'plural':forms[1], 'cnt': cnt})
                     if object == "person":
-                	    if cnt==1:
-	                    	GREET = ". "+ choice(I_GREET_ONE)
-	                    else:
-	                        GREET = ". "+ choice(I_GREET_TWO)
+                        if cnt==1:
+                            GREET = ". "+ choice(I_GREET_ONE)
+                        else:
+                            GREET = ". "+ choice(I_GREET_TWO)
+                    elif object in _OBJECT_RESPONSE:
+                        FOLLOW_UP = ". " + choice(_OBJECT_RESPONSE[object])
                 object_counts = dutch_counts
                 counts = ', '.join([f"{result['cnt'] if result['cnt'] > 1 else 'een'} {result['plural'] if result['cnt']> 1 else result['singular']}"
                                 for result in object_counts])
@@ -164,11 +202,11 @@ class MentionExtractionService:
                 if "person" in object_counts:
                     cnt = object_counts["person"]
                     if cnt==1:
-	                    GREET = ". Nice to see you human!"
+                        GREET = ". Nice to see you human!"
                     else:
-	                    GREET = ". Nice to see you folks!"
+                        GREET = ". Nice to see you folks!"
 
-            utterance =  f"{choice(I_SEE)} {counts}{GREET}"
+            utterance =  f"{choice(I_SEE)} {counts}{GREET}{FOLLOW_UP}"
 
             signal = TextSignal.for_scenario(self._scenario_id, timestamp_now(), timestamp_now(), None, utterance)
             self._event_bus.publish("cltl.topic.text_out", Event.for_payload(TextSignalEvent.for_agent(signal)))
