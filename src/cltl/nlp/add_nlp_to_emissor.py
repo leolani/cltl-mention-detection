@@ -43,13 +43,13 @@ class NLPAnnotator (SignalProcessor):
 
         return segments, annotations
 
-def main(emissor_path:str, scenario:str,  model:str, model_name:str):
-    annotator = NLPAnnotator(model=model, model_name=model_name, XLM=True)
+def main(emissor_path:str, scenario:str,  model:str):
+    annotator = NLPAnnotator(model=model)
     scenario_storage = ScenarioStorage(emissor_path)
     scenario_ctrl = scenario_storage.load_scenario(scenario)
     signals = scenario_ctrl.get_signals(Modality.TEXT)
     for signal in signals:
-        annotator.process_signal(scenario=scenario_ctrl, signal=signal)
+        annotator.process_signal(scenario=scenario_ctrl, text_signal=signal)
     #### Save the modified scenario to emissor
     scenario_storage.save_scenario(scenario_ctrl)
 
